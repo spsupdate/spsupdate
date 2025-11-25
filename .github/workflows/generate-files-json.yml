@@ -1,0 +1,30 @@
+name: Generate files.json
+
+on:
+  push:
+    paths:
+      - "release/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Generate files.json
+      run: |
+        echo "Generating files.json..."
+        files=()
+        for f in release/*; do
+          name=$(basename "$f")
+          hash=$(sha256sum "$f" | awk '{print $1}')
+          files+=("{\"name\":\"$name\",\"path\":\"$name\",\"hash\":\"$hash\"}")
+        done
+        printf "{\n  \"files\": [\n    %s\n  ]\n}" "$(IFS=,; echo "${files[*]}")" > files.json
+
+    - name: Commit files.json
+      uses: EndBug/add-and-commit@v9
+      with:
+        add: 'files.json'
+        message: "Auto-update files.json"
